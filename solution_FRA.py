@@ -5,7 +5,7 @@ from enum import Enum
 import pandas as pd
 
 # ============================================================
-# 1. Models
+# 1. MODELS
 # ============================================================
 
 class IncentiveType(str, Enum):
@@ -24,8 +24,8 @@ class BuildingProfile:
     income_level: str = "medium"
     building_type: str = "single_family"
     year_built: int = 1975
-    current_heating: str = "gas"
-    target_tech: str = "heat_pump_air"
+    current_heating: str = "gas"         # "gas", "electric", "district"
+    target_tech: str = "heat_pump_air"   # "heat_pump_air" / "heat_pump_ground"
     total_cost: float = 28000.0
     annual_current_cost: float = 2200.0
     annual_hp_cost: float = 1100.0
@@ -90,7 +90,7 @@ class StackedPlan:
 
 
 # ============================================================
-# 2. Incentive logic
+# 2. INCENTIVE LOGIC
 # ============================================================
 
 def match_incentive(i: Incentive, p: BuildingProfile) -> bool:
@@ -130,19 +130,17 @@ def build_stacked_plan(p: BuildingProfile, incentives: List[Incentive]) -> Stack
 
     total = sum(r.amount for r in applied)
     total = min(total, p.total_cost)
-    share = total / p.total_cost if p.total_cost > 0 else 0
+    share = total / p.total_cost if p.total_cost > 0 else 0.0
     remaining = p.total_cost - total
 
     return StackedPlan(applied, total, share, remaining)
 
 
 # ============================================================
-# 3. Static data: incentives, installers, suppliers (multi-country)
+# 3. STATIC DATA (MULTI-COUNTRY INCENTIVES / INSTALLERS / SUPPLIERS)
 # ============================================================
 
 def incentives_multi(country: str, city: str) -> List[Incentive]:
-    """Mock incentives for several countries (demo)."""
-
     inc: List[Incentive] = []
 
     if country == "DE":
@@ -205,7 +203,7 @@ def incentives_multi(country: str, city: str) -> List[Incentive]:
                 ),
             ])
 
-    elif country == "AT":  # Austria (demo)
+    elif country == "AT":
         inc.extend([
             Incentive(
                 id="AT_NATIONAL",
@@ -229,7 +227,7 @@ def incentives_multi(country: str, city: str) -> List[Incentive]:
             ),
         ])
 
-    elif country == "PL":  # Poland (demo)
+    elif country == "PL":
         inc.extend([
             Incentive(
                 id="PL_CLEAN_AIR",
@@ -282,63 +280,92 @@ def installers_multi(country: str, city: str) -> List[Installer]:
 
 def suppliers_multi(country: str, city: str) -> List[Supplier]:
     data = [
-        Supplier("Mainova GreenHeat", "100% renewable electricity", 0.286, 100,
-                 "mainova.de", country="DE", city="Frankfurt"),
-        Supplier("Naturstrom AG", "Premium Ökostrom", 0.295, 100,
-                 "naturstrom.de", country="DE", city="Frankfurt"),
-
-        Supplier("Wien Energie Naturstrom", "100% Ökostrom", 0.290, 100,
-                 "wienenergie.at", country="AT", city="Vienna"),
-        Supplier("Polenergia Green", "Green electricity tariff", 0.280, 100,
-                 "polenergia.pl", country="PL", city="Warsaw"),
-
-        Supplier("EU Green Power", "Generic demo green tariff", 0.300, 100,
-                 "eugreen.eu", country="EU", city="Capital"),
+        Supplier(
+            name="Mainova GreenHeat",
+            country="DE",
+            city="Frankfurt",
+            tariff="100% renewable electricity",
+            price_kwh=0.286,
+            renewable_share=100,
+            contact="mainova.de",
+        ),
+        Supplier(
+            name="Naturstrom AG",
+            country="DE",
+            city="Frankfurt",
+            tariff="Premium Ökostrom",
+            price_kwh=0.295,
+            renewable_share=100,
+            contact="naturstrom.de",
+        ),
+        Supplier(
+            name="Wien Energie Naturstrom",
+            country="AT",
+            city="Vienna",
+            tariff="100% Ökostrom",
+            price_kwh=0.290,
+            renewable_share=100,
+            contact="wienenergie.at",
+        ),
+        Supplier(
+            name="Polenergia Green",
+            country="PL",
+            city="Warsaw",
+            tariff="Green electricity tariff",
+            price_kwh=0.280,
+            renewable_share=100,
+            contact="polenergia.pl",
+        ),
+        Supplier(
+            name="EU Green Power",
+            country="EU",
+            city="Capital",
+            tariff="Generic demo green tariff",
+            price_kwh=0.300,
+            renewable_share=100,
+            contact="eugreen.eu",
+        ),
     ]
+
     res = [s for s in data if s.country == country and s.city.lower() == city.lower()]
     if not res:
-        # Fallback generic supplier per country
-        res = [Supplier(
-            name=f"{country} Green Supplier",
-            country=country,
-            city=city,
-            tariff="Renewable mix (demo)",
-            price_kwh=0.30,
-            renewable_share=100,
-            contact="example.com",
-        )]
+        # fallback generic supplier
+        res = [
+            Supplier(
+                name=f"{country} Green Supplier",
+                country=country,
+                city=city,
+                tariff="Renewable mix (demo)",
+                price_kwh=0.30,
+                renewable_share=100,
+                contact="example.com",
+            )
+        ]
     return res
 
 
 # ============================================================
-# 4. Additional calculations (energy, CO₂, taxes, loans)
+# 4. CALCULATIONS (ENERGY / CO2 / TAX / LOAN)
 # ============================================================
 
 def calc_co2_profile(p: BuildingProfile, supplier: Supplier):
-    """
-    Returns (CO2_before, CO2_after, CO2_saved) in tons/year.
-    Very simplified demo.
-    """
-    # Assume current system based on fossil fuel (gas/oil/coal)
-    fossil_price = 0.12      # €/kWh equivalent
+    fossil_price = 0.12      # €/kWh
     fossil_ef = 0.202        # ton CO2 / MWh
-    grid_ef = 0.35           # ton CO2 / MWh for normal grid
+    grid_ef = 0.35           # ton CO2 / MWh for generic grid
 
-    # before: fossil or inefficient electric
     kwh_before = p.annual_current_cost / fossil_price
-    co2_before = kwh_before * fossil_ef / 1000
+    co2_before = kwh_before * fossil_ef / 1000.0
 
-    # after: heat pump on (partly) green electricity
     hp_kwh = p.annual_hp_cost / supplier.price_kwh
-    effective_grid_ef = grid_ef * (1 - supplier.renewable_share / 100)
-    co2_after = hp_kwh * effective_grid_ef / 1000
+    effective_grid_ef = grid_ef * (1 - supplier.renewable_share / 100.0)
+    co2_after = hp_kwh * effective_grid_ef / 1000.0
 
-    co2_saved = co2_before - co2_after
-    return co2_before, max(co2_after, 0), max(co2_saved, 0)
+    co2_saved = max(co2_before - co2_after, 0.0)
+    return co2_before, max(co2_after, 0.0), co2_saved
 
 
 def calc_tax_savings(co2_saved_tons: float) -> float:
-    co2_price = 45  # €/ton (illustrative)
+    co2_price = 45.0  # €/ton (illustrative)
     return co2_saved_tons * co2_price
 
 
@@ -357,16 +384,15 @@ def calc_green_loan_savings(p: BuildingProfile) -> float:
 
 
 # ============================================================
-# 5. Streamlit UI
+# 5. STREAMLIT UI
 # ============================================================
 
 st.set_page_config(
     page_title="HeatShift — Multi-country",
     page_icon="🔥",
-    layout="centered"
+    layout="centered",
 )
 
-# Simple “green Diia” styling
 st.markdown(
     """
     <style>
@@ -381,22 +407,27 @@ st.markdown(
     }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 st.title("🔥 HeatShift")
-st.caption("Interactive green heating assistant — multi-country demo.")
+st.caption("Interactive green heating assistant — multi-country prototype.")
 
-# -------- Sidebar: country + basic inputs --------
+# ---------------- Sidebar ----------------
 with st.sidebar:
     st.header("🌍 Location")
 
     country_name = st.selectbox(
         "Country",
         ["Germany", "Austria", "Poland", "Other EU demo"],
-        index=0
+        index=0,
     )
-    country_code = {"Germany": "DE", "Austria": "AT", "Poland": "PL", "Other EU demo": "EU"}[country_name]
+    country_code = {
+        "Germany": "DE",
+        "Austria": "AT",
+        "Poland": "PL",
+        "Other EU demo": "EU",
+    }[country_name]
 
     if country_code == "DE":
         city = st.selectbox("City", ["Frankfurt", "Berlin", "Munich", "Other"], index=0)
@@ -411,14 +442,20 @@ with st.sidebar:
     st.header("🏠 Building")
 
     year = st.slider("Year built", 1900, 2023, 1975)
-    current_heating_display = st.selectbox("Current heating system", ["Gas / oil", "Electric (old)", "District / other"])
+    current_heating_display = st.selectbox(
+        "Current heating system",
+        ["Gas / oil", "Electric (old)", "District / other"],
+    )
     current_heating_code = {
         "Gas / oil": "gas",
         "Electric (old)": "electric",
-        "District / other": "district"
+        "District / other": "district",
     }[current_heating_display]
 
-    tech_display = st.selectbox("Target technology", ["Air-source heat pump", "Ground-source heat pump (geothermal)"])
+    tech_display = st.selectbox(
+        "Target technology",
+        ["Air-source heat pump", "Ground-source heat pump (geothermal)"],
+    )
     target_tech_code = "heat_pump_air" if "Air" in tech_display else "heat_pump_ground"
 
     total_cost = st.number_input("Total project cost (€)", 5000, 100000, 30000, step=1000)
@@ -428,8 +465,6 @@ with st.sidebar:
     st.header("💡 Energy costs (per year)")
     current_cost = st.number_input("Current annual heating cost (€)", 500, 8000, 4000, step=100)
     hp_cost = st.number_input("Expected annual heat-pump electricity cost (€)", 200, 6000, 2000, step=100)
-
-    st.markdown("---")
 
 # suppliers & profile
 suppliers = suppliers_multi(country_code, city)
@@ -459,31 +494,35 @@ loan_savings = calc_green_loan_savings(profile)
 total_annual_benefit = energy_savings + tax_savings
 
 # ============================================================
-# Tabs for overview / charts / suppliers & installers
+# TABS
 # ============================================================
 
-tab_overview, tab_charts, tab_suppliers = st.tabs(["Overview", "Charts", "Suppliers & Installers"])
+tab_overview, tab_charts, tab_suppliers = st.tabs(
+    ["Overview", "Charts", "Suppliers & Installers"]
+)
 
-# -------- Overview tab --------
+# -------- Overview --------
 with tab_overview:
     st.header("💰 Financial & climate benefits")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Annual savings", f"€{total_annual_benefit:,.0f}")
-    col2.metric("Energy bill savings", f"€{energy_savings:,.0f}")
-    col3.metric("CO₂ avoided / year", f"{co2_saved:.2f} t")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Annual savings", f"€{total_annual_benefit:,.0f}")
+    c2.metric("Energy bill savings", f"€{energy_savings:,.0f}")
+    c3.metric("CO₂ avoided / year", f"{co2_saved:.2f} t")
 
-    col4, col5 = st.columns(2)
-    col4.metric("Environmental tax savings*", f"€{tax_savings:,.0f}")
-    col5.metric("Loan interest saved†", f"€{loan_savings:,.0f}")
-    st.caption("*Approximate CO₂-price savings.  †Demo vs 5% standard loan over 10 years.")
+    c4, c5 = st.columns(2)
+    c4.metric("Environmental tax savings*", f"€{tax_savings:,.0f}")
+    c5.metric("Loan interest saved†", f"€{loan_savings:,.0f}")
+    st.caption("*Approximate CO₂-price savings.  †Demo vs 5% loan over 10 years.")
 
     st.markdown("---")
     st.header("🎁 Incentives you receive")
 
     if stack.incentives:
         for r in stack.incentives:
-            st.write(f"**{r.incentive.name}** — €{r.amount:,.0f} ({r.incentive.source.value})")
+            st.write(
+                f"**{r.incentive.name}** — €{r.amount:,.0f} ({r.incentive.source.value})"
+            )
     else:
         st.info("No incentives matched this profile. Try another country/city or heating type.")
 
@@ -493,41 +532,44 @@ with tab_overview:
         f"You pay: **€{stack.remaining:,.0f}**."
     )
 
-# -------- Charts tab --------
+# -------- Charts --------
 with tab_charts:
     st.header("📊 Cost & CO₂ comparison")
 
-    # Cost comparison
-    cost_df = pd.DataFrame({
-        "Scenario": ["Before (current system)", "After (heat pump)"],
-        "Annual cost (€)": [profile.annual_current_cost, profile.annual_hp_cost],
-    }).set_index("Scenario")
+    cost_df = pd.DataFrame(
+        {
+            "Scenario": ["Before (current system)", "After (heat pump)"],
+            "Annual cost (€)": [profile.annual_current_cost, profile.annual_hp_cost],
+        }
+    ).set_index("Scenario")
     st.subheader("Annual heating cost")
     st.bar_chart(cost_df)
 
-    # CO2 comparison
-    co2_df = pd.DataFrame({
-        "Scenario": ["Before (current system)", "After (heat pump)"],
-        "CO₂ (t/year)": [co2_before, co2_after],
-    }).set_index("Scenario")
+    co2_df = pd.DataFrame(
+        {
+            "Scenario": ["Before (current system)", "After (heat pump)"],
+            "CO₂ (t/year)": [co2_before, co2_after],
+        }
+    ).set_index("Scenario")
     st.subheader("Annual CO₂ emissions")
     st.bar_chart(co2_df)
 
-    # 10-year cumulative
     years = list(range(1, 11))
     cum_before = [profile.annual_current_cost * y for y in years]
     cum_after = [profile.annual_hp_cost * y for y in years]
 
-    cum_df = pd.DataFrame({
-        "Year": years,
-        "Current heating (€)": cum_before,
-        "Heat pump (€)": cum_after,
-    }).set_index("Year")
+    cum_df = pd.DataFrame(
+        {
+            "Year": years,
+            "Current heating (€)": cum_before,
+            "Heat pump (€)": cum_after,
+        }
+    ).set_index("Year")
 
     st.subheader("Cumulative heating cost over 10 years")
     st.line_chart(cum_df)
 
-# -------- Suppliers & installers tab --------
+# -------- Suppliers & installers --------
 with tab_suppliers:
     st.header("⚡ Certified green electricity suppliers")
 
