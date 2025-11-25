@@ -421,7 +421,6 @@ st.markdown(
 )
 
 st.title("🔥 HeatShift")
-st.caption("Interactive green heating assistant — multi-country prototype.")
 
 # ---------------- Sidebar ----------------
 with st.sidebar:
