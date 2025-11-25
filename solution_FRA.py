@@ -397,24 +397,53 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* App background */
+    /* Neutral theme compatible with both Light & Dark modes */
+
+    /* Background stays transparent → Streamlit manages colors */
     [data-testid="stAppViewContainer"] {
-        background-color: #f5f7fb;
+        background-color: transparent !important;
     }
+
+    /* Header uses theme defaults */
     [data-testid="stHeader"] {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.0) !important;
+        backdrop-filter: blur(6px);
     }
-    /* Metric cards */
+
+    /* Metric cards: neutral containers (auto match dark/light) */
     div[data-testid="stMetric"] {
-        background-color: #ffffff !important;
-        padding: 0.75rem 1rem;
+        background-color: var(--background-color) !important;
         border-radius: 0.75rem;
-        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-color);
     }
-    /* Tabs */
+
+    /* Tabs: neutral + rely on theme colors */
     button[data-baseweb="tab"] {
         font-weight: 500;
+        border-radius: 0.5rem !important;
     }
+
+    /* Add neutral CSS variables that adapt to theme */
+    :root {
+        --background-color: rgba(255, 255, 255, 0.08);
+        --border-color: rgba(120, 120, 120, 0.25);
+    }
+
+    @media (prefers-color-scheme: light) {
+        :root {
+            --background-color: #ffffff;
+            --border-color: #e2e8f0;
+        }
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background-color: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.12);
+        }
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
