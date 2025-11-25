@@ -660,8 +660,3 @@ with tab_suppliers:
                 f"Tech: {', '.join(inst.supported_tech)}  \n"
                 f"{inst.email}"
             )
-
-st.markdown("---")
-st.caption(
-    "HeatShift — multi-country, interactive, light-theme prototype for renewable heating."
-)
