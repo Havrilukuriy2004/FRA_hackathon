@@ -384,7 +384,7 @@ def calc_green_loan_savings(p: BuildingProfile) -> float:
 
 
 # ============================================================
-# 5. STREAMLIT UI
+# 5. STREAMLIT UI (LIGHT THEME)
 # ============================================================
 
 st.set_page_config(
@@ -393,17 +393,27 @@ st.set_page_config(
     layout="centered",
 )
 
+# Light theme styling (subtle, keeps Streamlit default mostly intact)
 st.markdown(
     """
     <style>
-    .main {
-        background-color: #071b2f;
-        color: #f5f7fb;
+    /* App background */
+    [data-testid="stAppViewContainer"] {
+        background-color: #f5f7fb;
     }
-    .stMetric {
-        background-color: #0d253a !important;
-        border-radius: 12px;
-        padding: 8px;
+    [data-testid="stHeader"] {
+        background: rgba(255, 255, 255, 0.8);
+    }
+    /* Metric cards */
+    div[data-testid="stMetric"] {
+        background-color: #ffffff !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+    }
+    /* Tabs */
+    button[data-baseweb="tab"] {
+        font-weight: 500;
     }
     </style>
     """,
@@ -458,18 +468,30 @@ with st.sidebar:
     )
     target_tech_code = "heat_pump_air" if "Air" in tech_display else "heat_pump_ground"
 
-    total_cost = st.number_input("Total project cost (€)", 5000, 100000, 30000, step=1000)
+    total_cost = st.number_input(
+        "Total project cost (€)", 5000, 100000, 30000, step=1000
+    )
     income = st.selectbox("Income level", ["low", "medium", "high"])
 
     st.markdown("---")
     st.header("💡 Energy costs (per year)")
-    current_cost = st.number_input("Current annual heating cost (€)", 500, 8000, 4000, step=100)
-    hp_cost = st.number_input("Expected annual heat-pump electricity cost (€)", 200, 6000, 2000, step=100)
+    current_cost = st.number_input(
+        "Current annual heating cost (€)", 500, 8000, 4000, step=100
+    )
+    hp_cost = st.number_input(
+        "Expected annual heat-pump electricity cost (€)",
+        200,
+        6000,
+        2000,
+        step=100,
+    )
 
 # suppliers & profile
 suppliers = suppliers_multi(country_code, city)
 supplier_names = [s.name for s in suppliers]
-chosen_supplier_name = st.selectbox("Choose certified green electricity supplier", supplier_names)
+chosen_supplier_name = st.selectbox(
+    "Choose certified green electricity supplier", supplier_names
+)
 chosen_supplier = next(s for s in suppliers if s.name == chosen_supplier_name)
 
 profile = BuildingProfile(
@@ -524,7 +546,9 @@ with tab_overview:
                 f"**{r.incentive.name}** — €{r.amount:,.0f} ({r.incentive.source.value})"
             )
     else:
-        st.info("No incentives matched this profile. Try another country/city or heating type.")
+        st.info(
+            "No incentives matched this profile. Try another country/city or heating type."
+        )
 
     st.success(
         f"Total grants: **€{stack.total:,.0f}** "
@@ -539,7 +563,10 @@ with tab_charts:
     cost_df = pd.DataFrame(
         {
             "Scenario": ["Before (current system)", "After (heat pump)"],
-            "Annual cost (€)": [profile.annual_current_cost, profile.annual_hp_cost],
+            "Annual cost (€)": [
+                profile.annual_current_cost,
+                profile.annual_hp_cost,
+            ],
         }
     ).set_index("Scenario")
     st.subheader("Annual heating cost")
@@ -607,4 +634,6 @@ with tab_suppliers:
             )
 
 st.markdown("---")
-st.caption("HeatShift — multi-country, interactive, Diia-style prototype for renewable heating.")
+st.caption(
+    "HeatShift — multi-country, interactive, light-theme prototype for renewable heating."
+)
