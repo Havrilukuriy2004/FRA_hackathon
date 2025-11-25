@@ -449,11 +449,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🔥 HeatShift")
+st.title("Switch with us")
 
 # ---------------- Sidebar ----------------
 with st.sidebar:
-    st.header("🌍 Location")
+    st.header("Location")
 
     country_name = st.selectbox(
         "Country",
@@ -477,7 +477,7 @@ with st.sidebar:
         city = st.text_input("City", "Capital")
 
     st.markdown("---")
-    st.header("🏠 Building")
+    st.header("Building")
 
     year = st.slider("Year built", 1900, 2023, 1975)
     current_heating_display = st.selectbox(
@@ -553,7 +553,7 @@ tab_overview, tab_charts, tab_suppliers = st.tabs(
 
 # -------- Overview --------
 with tab_overview:
-    st.header("💰 Financial & climate benefits")
+    st.header("Financial & climate benefits")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Annual savings", f"€{total_annual_benefit:,.0f}")
@@ -566,7 +566,7 @@ with tab_overview:
     st.caption("*Approximate CO₂-price savings.  †Demo vs 5% loan over 10 years.")
 
     st.markdown("---")
-    st.header("🎁 Incentives you receive")
+    st.header("Incentives you receive")
 
     if stack.incentives:
         for r in stack.incentives:
@@ -586,7 +586,7 @@ with tab_overview:
 
 # -------- Charts --------
 with tab_charts:
-    st.header("📊 Cost & CO₂ comparison")
+    st.header("Cost & CO₂ comparison")
 
     cost_df = pd.DataFrame(
         {
@@ -658,7 +658,7 @@ with tab_suppliers:
             st.write(
                 f"**{inst.name}** — ⭐ {inst.rating} ({inst.reviews} reviews)  \n"
                 f"Tech: {', '.join(inst.supported_tech)}  \n"
-                f"📧 {inst.email}"
+                f"{inst.email}"
             )
 
 st.markdown("---")
